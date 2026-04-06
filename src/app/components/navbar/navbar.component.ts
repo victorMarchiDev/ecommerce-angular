@@ -11,6 +11,7 @@ import { RouterModule } from '@angular/router';
       <a routerLink="/cart" routerLinkActive="active">Carrinho</a>
       <a routerLink="/orders" routerLinkActive="active">Pedidos</a>
       <a routerLink="/deliveries" routerLinkActive="active">Entregas</a>
+      <a routerLink="/login" routerLinkActive="active">Perfil</a>
     </nav>
   `,
   styles: [`
