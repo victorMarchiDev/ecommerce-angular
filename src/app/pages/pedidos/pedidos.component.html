@@ -1,0 +1,148 @@
+<section class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="mb-0">Meus Pedidos</h1>
+    <button class="btn btn-primary" (click)="toggleFormulario()">
+      {{ mostrarFormulario ? 'Cancelar' : 'Novo Pedido' }}
+    </button>
+  </div>
+
+  <!-- Formulário de novo pedido -->
+  <div class="card mb-4" *ngIf="mostrarFormulario">
+    <div class="card-header">
+      <strong>Novo Pedido</strong>
+    </div>
+    <div class="card-body">
+      <form [formGroup]="form">
+        <div formArrayName="itens">
+          <div
+            *ngFor="let item of itensArray.controls; let i = index"
+            [formGroupName]="i"
+            class="row g-2 mb-2 align-items-end"
+          >
+            <div class="col">
+              <label class="form-label small">Produto</label>
+              <select class="form-select" formControlName="produtoId">
+                <option [ngValue]="null">Selecione...</option>
+                <option *ngFor="let p of produtos" [ngValue]="p.id">
+                  {{ p.nome }} - R$ {{ p.preco.toFixed(2) }}
+                </option>
+              </select>
+            </div>
+            <div class="col-2">
+              <label class="form-label small">Qtd</label>
+              <input type="number" class="form-control" formControlName="quantidade" min="1" max="99" />
+            </div>
+            <div class="col-auto">
+              <button
+                class="btn btn-outline-danger btn-sm"
+                type="button"
+                (click)="removerItem(i)"
+                *ngIf="itensArray.length > 1"
+              >✕</button>
+            </div>
+          </div>
+        </div>
+      </form>
+
+      <button class="btn btn-outline-secondary btn-sm mb-3" type="button" (click)="adicionarItem()">
+        + Adicionar produto
+      </button>
+
+      <div class="d-flex justify-content-between align-items-center">
+        <strong>Total: R$ {{ calcularTotalFormulario().toFixed(2) }}</strong>
+        <button
+          class="btn btn-success"
+          type="button"
+          (click)="criarPedido()"
+          [disabled]="form.invalid"
+        >Confirmar Pedido</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Formulário de edição de status -->
+  <div class="card mb-4 border-warning" *ngIf="pedidoEmEdicao !== null">
+    <div class="card-header bg-warning text-dark">
+      <strong>Editar Pedido #{{ pedidoEmEdicao }}</strong>
+    </div>
+    <div class="card-body">
+      <form [formGroup]="editForm">
+        <div class="row g-3 align-items-end">
+          <div class="col-md-6">
+            <label class="form-label">Status</label>
+            <select class="form-select" formControlName="status">
+              <option value="Aguardando pagamento">Aguardando pagamento</option>
+              <option value="Em trânsito">Em trânsito</option>
+              <option value="Entregue">Entregue</option>
+              <option value="Cancelado">Cancelado</option>
+            </select>
+          </div>
+          <div class="col-md-6 d-flex gap-2">
+            <button class="btn btn-warning" type="button" (click)="salvarEdicao()">Salvar</button>
+            <button class="btn btn-outline-secondary" type="button" (click)="cancelarEdicao()">Cancelar</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div *ngIf="pedidos().length === 0" style="color: #888; text-align: center; margin-top: 60px;">
+    <p>Você ainda não fez nenhum pedido.</p>
+  </div>
+
+  <div *ngFor="let pedido of pedidos()" class="card mb-3">
+    <div
+      class="card-header d-flex justify-content-between align-items-center"
+      style="cursor: pointer;"
+      (click)="toggleDetalhes(pedido.id)"
+    >
+      <div>
+        <strong>Pedido #{{ pedido.id }}</strong>
+        <span class="ms-2 text-muted" style="font-size: 13px;">{{ pedido.data }}</span>
+      </div>
+      <div class="d-flex align-items-center gap-3">
+        <span
+          class="badge"
+          [ngClass]="{
+            'bg-success': pedido.status === 'Entregue',
+            'bg-primary': pedido.status === 'Em trânsito',
+            'bg-warning text-dark': pedido.status === 'Aguardando pagamento',
+            'bg-danger': pedido.status === 'Cancelado'
+          }"
+        >{{ pedido.status }}</span>
+        <strong>R$ {{ pedido.total.toFixed(2) }}</strong>
+        <span>{{ pedidoAberto === pedido.id ? '▲' : '▼' }}</span>
+      </div>
+    </div>
+
+    <div class="card-body" *ngIf="pedidoAberto === pedido.id">
+      <table class="table table-sm mb-3">
+        <thead>
+          <tr>
+            <th>Produto</th>
+            <th>Qtd</th>
+            <th>Preço</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of pedido.itens">
+            <td>{{ item.nome }}</td>
+            <td>{{ item.quantidade }}</td>
+            <td>R$ {{ item.preco.toFixed(2) }}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="d-flex gap-2">
+        <button
+          class="btn btn-outline-warning btn-sm"
+          (click)="iniciarEdicao(pedido.id, pedido.status); $event.stopPropagation()"
+        >Editar</button>
+        <button
+          class="btn btn-outline-danger btn-sm"
+          (click)="deletarPedido(pedido.id); $event.stopPropagation()"
+        >Deletar</button>
+      </div>
+    </div>
+  </div>
+</section>
