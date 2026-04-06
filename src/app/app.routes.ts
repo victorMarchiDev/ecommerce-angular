@@ -4,6 +4,7 @@ import { CarrinhoComponent } from './pages/carrinho/carrinho.component';
 import { PedidosComponent } from './pages/pedidos/pedidos.component';
 import { EntregasComponent } from './pages/entregas/entregas.component';
 import { UsuariosComponent } from './pages/usuarios/usuarios.component';
+import { LoginComponent } from './pages/login/login.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'usuarios', pathMatch: 'full' },
@@ -12,5 +13,6 @@ export const routes: Routes = [
   { path: 'pedidos', component: PedidosComponent },
   { path: 'entregas', component: EntregasComponent },
   { path: 'usuarios', component: UsuariosComponent },
+  { path: 'login', component: LoginComponent },
   { path: '**', redirectTo: 'produtos' }
 ];
