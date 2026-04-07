@@ -1,89 +1,94 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { CarrinhoService, ItemRecomendado } from '../../services/carrinho.service';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
+import { CarrinhoService, ItemCarrinho } from '../../services/carrinho.service';
 
 @Component({
   selector: 'app-carrinho',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule],
-  template: `
-    <section class="container py-4">
-      <h1 class="mb-3">Carrinho</h1>
-
-      @if (itens().length === 0) {
-        <div style="color: #888; text-align: center; margin-top: 60px;">
-          <p>Seu carrinho está vazio.</p>
-        </div>
-      }
-
-      @for (item of itens(); track item.id) {
-        <div class="card mb-3">
-          <div class="card-body d-flex justify-content-between align-items-center">
-            <div>
-              <h5 class="card-title mb-1">{{ item.nome }}</h5>
-              <p class="card-text text-muted mb-0">Preço: R$ {{ item.preco.toFixed(2) }}</p>
-              <p class="card-text text-muted mb-0">Quantidade: {{ item.quantidade }}</p>
-            </div>
-            <button class="btn btn-danger btn-sm" (click)="removerItem(item.id)">Remover</button>
-          </div>
-        </div>
-      }
-
-      @if (itens().length > 0) {
-        <div class="d-flex justify-content-end mt-4">
-          <h4>Total: R$ {{ total().toFixed(2) }}</h4>
-        </div>
-      }
-
-      <section class="mt-5" aria-label="Itens recomendados">
-        <h2 class="h4 mb-3">Recomendados para você</h2>
-
-        <div class="row row-cols-1 row-cols-md-3 g-3">
-          @for (recomendado of recomendados; track recomendado.id) {
-            <div class="col">
-              <div class="card h-100">
-                <div class="card-body d-flex flex-column">
-                  <h3 class="h6">{{ recomendado.nome }}</h3>
-                  <p class="text-muted mb-3">R$ {{ recomendado.preco.toFixed(2) }}</p>
-                  <button
-                    class="btn btn-outline-primary btn-sm mt-auto"
-                    type="button"
-                    (click)="adicionarRecomendado(recomendado.id)"
-                  >
-                    Adicionar ao carrinho
-                  </button>
-                </div>
-              </div>
-            </div>
-          }
-        </div>
-      </section>
-
-      <div class="d-flex justify-content-end mt-3">
-        <button class="btn btn-primary">Finalizar Compra</button>
-      </div>
-    </section>
-  `
+  imports: [CommonModule, ReactiveFormsModule],
+  templateUrl: './carrinho.component.html'
 })
 
 export class CarrinhoComponent {
   private readonly carrinhoService = inject(CarrinhoService);
+  private readonly formBuilder = inject(FormBuilder);
 
   readonly itens = this.carrinhoService.itens;
-  readonly total = this.carrinhoService.total;
-  readonly recomendados = this.carrinhoService.recomendados;
+  readonly produtoAdicionado = signal(false);
+  readonly editarId = signal<number | null>(null);
 
-  adicionarRecomendado(id: number): void {
-    const recomendado = this.recomendados.find((item: ItemRecomendado) => item.id === id);
+  readonly produtoForm = this.formBuilder.nonNullable.group({
+    nome: ['', [Validators.required, Validators.minLength(2)]],
+    preco: [0, [Validators.required, Validators.min(0.01)]],
+    quantidade: [1, [Validators.required, Validators.min(1)]]
+  });
 
-    if (!recomendado) {
+  campoInvalido(campo: 'nome' | 'preco' | 'quantidade'): boolean {
+    const controle = this.produtoForm.controls[campo];
+
+    return controle.invalid && controle.touched;
+  }
+
+  adicionarProduto(): void {
+    this.produtoAdicionado.set(false);
+
+    if (this.produtoForm.invalid) {
+      this.produtoForm.markAllAsTouched();
+
       return;
     }
 
-    this.carrinhoService.criarItem(recomendado);
+    const { nome, preco, quantidade } = this.produtoForm.getRawValue();
+    const idEdicao = this.editarId();
+
+    if (idEdicao === null) {
+      this.carrinhoService.adicionarProduto({ nome, preco, quantidade });
+    } else {
+      this.carrinhoService.atualizarProduto(idEdicao, { nome, preco, quantidade });
+      this.editarId.set(null);
+    }
+
+    this.produtoAdicionado.set(true);
+    this.produtoForm.markAsPristine();
+    this.produtoForm.markAsUntouched();
+
+    this.produtoForm.reset({
+      nome: '',
+      preco: 0,
+      quantidade: 1
+    });
   }
 
-  removerItem(id: number): void {
+  iniciarEdicao(id: number): void {
+    const item = this.itens().find((produto: ItemCarrinho) => produto.id === id);
+
+    if (!item) {
+      return;
+    }
+
+    this.editarId.set(id);
+    this.produtoAdicionado.set(false);
+    this.produtoForm.setValue({
+      nome: item.nome,
+      preco: item.preco,
+      quantidade: item.quantidade
+    });
+  }
+
+  removerProduto(id: number): void {
     this.carrinhoService.removerItem(id);
+
+    if (this.editarId() === id) {
+      this.editarId.set(null);
+      this.produtoAdicionado.set(false);
+      this.produtoForm.reset({
+        nome: '',
+        preco: 0,
+        quantidade: 1
+      });
+      this.produtoForm.markAsPristine();
+      this.produtoForm.markAsUntouched();
+    }
   }
 }

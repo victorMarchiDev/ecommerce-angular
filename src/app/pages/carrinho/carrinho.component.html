@@ -1,0 +1,98 @@
+<section class="container py-4">
+  <h1 class="mb-3">Carrinho</h1>
+
+  <section aria-label="Gerenciar produtos no carrinho">
+    <h2 class="h5 mb-3">Adicionar ou editar produto</h2>
+
+    <form [formGroup]="produtoForm" (ngSubmit)="adicionarProduto()" novalidate>
+      <div class="mb-3">
+        <label class="form-label" for="nome">Nome do produto</label>
+        <input
+          id="nome"
+          class="form-control"
+          type="text"
+          formControlName="nome"
+          autocomplete="off"
+        />
+        @if (campoInvalido('nome')) {
+          <small class="text-danger">Informe o nome do produto.</small>
+        }
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label" for="preco">Preço (R$)</label>
+        <input
+          id="preco"
+          class="form-control"
+          type="number"
+          formControlName="preco"
+          min="0.01"
+          step="0.01"
+        />
+        @if (campoInvalido('preco')) {
+          <small class="text-danger">Informe um preço válido.</small>
+        }
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label" for="quantidade">Quantidade</label>
+        <input
+          id="quantidade"
+          class="form-control"
+          type="number"
+          formControlName="quantidade"
+          min="1"
+          step="1"
+        />
+        @if (campoInvalido('quantidade')) {
+          <small class="text-danger">Informe uma quantidade válida.</small>
+        }
+      </div>
+
+      <div class="d-flex justify-content-end">
+        <button class="btn btn-primary" type="submit">
+          {{ editarId() !== null ? 'Salvar' : 'Adicionar ao carrinho' }}
+        </button>
+      </div>
+    </form>
+
+    @if (produtoAdicionado()) {
+      <div class="alert alert-success mt-3" role="status">
+        Produto salvo com sucesso.
+      </div>
+    }
+
+    @if (itens().length === 0) {
+      <div class="alert alert-info mt-4">Nenhum produto no carrinho.</div>
+    }
+
+    @if (itens().length > 0) {
+      <div class="mt-4">
+        <h3 class="h6 mb-3">Produtos no carrinho</h3>
+
+        <div class="row row-cols-1 row-cols-md-2 g-3">
+          @for (item of itens(); track item.id) {
+            <div class="col">
+              <div class="card h-100">
+                <div class="card-body d-flex flex-column">
+                  <h4 class="h6 mb-1">{{ item.nome }}</h4>
+                  <p class="text-muted mb-1">Preço: R$ {{ item.preco.toFixed(2) }}</p>
+                  <p class="text-muted mb-3">Quantidade: {{ item.quantidade }}</p>
+
+                  <div class="d-flex gap-2 mt-auto">
+                    <button class="btn btn-outline-primary btn-sm" type="button" (click)="iniciarEdicao(item.id)">
+                      Editar
+                    </button>
+                    <button class="btn btn-outline-danger btn-sm" type="button" (click)="removerProduto(item.id)">
+                      Remover
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+  </section>
+</section>
