@@ -1,0 +1,152 @@
+<section class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="mb-0">Controle de Entregas</h1>
+    <button class="btn btn-primary" (click)="toggleFormulario()">
+      {{ mostrarFormulario ? 'Cancelar' : 'Cadastrar entrega' }}
+    </button>
+  </div>
+
+  <!-- Nova entrega -->
+  <div class="card mb-4" *ngIf="mostrarFormulario">
+    <div class="card-header">
+      <strong>Nova Entrega</strong>
+    </div>
+    <div class="card-body">
+      <form [formGroup]="form">
+        <div class="row g-3 align-items-end">
+          <div class="col-md-4">
+            <label class="form-label">Cliente</label>
+            <input class="form-control" formControlName="cliente" />
+            <div class="text-danger small" *ngIf="form.get('cliente')?.invalid && form.get('cliente')?.touched">
+              Campo obrigatório
+            </div>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Endereço</label>
+            <input class="form-control" formControlName="endereco" />
+            <div class="text-danger small" *ngIf="form.get('endereco')?.invalid && form.get('endereco')?.touched">
+              Campo obrigatório
+            </div>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Data de Envio</label>
+            <input type="date" class="form-control" formControlName="dataEnvio" />
+            <div class="text-danger small" *ngIf="form.get('dataEnvio')?.invalid && form.get('dataEnvio')?.touched">
+              Campo obrigatório
+            </div>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Status</label>
+            <select class="form-select" formControlName="status">
+              <option value="Preparando envio">Preparando envio</option>
+              <option value="Em transporte">Em transporte</option>
+              <option value="Saiu para entrega">Saiu para entrega</option>
+              <option value="Entregue">Entregue</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Produto</label>
+            <input class="form-control" formControlName="itemNome" />
+            <div class="text-danger small" *ngIf="form.get('itemNome')?.invalid && form.get('itemNome')?.touched">
+              Campo obrigatório
+            </div>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Quantidade</label>
+            <input type="number" class="form-control" formControlName="itemQtd" min="1" />
+          </div>
+          <div class="col-md-2">
+            <button class="btn btn-success w-100" type="button" (click)="adicionarEntrega()" [disabled]="form.invalid">
+              Adicionar
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Edição de status -->
+  <div class="card mb-4 border-warning" *ngIf="entregaEmEdicao !== null">
+    <div class="card-header bg-warning text-dark">
+      <strong>Editar Entrega #{{ entregaEmEdicao }}</strong>
+    </div>
+    <div class="card-body">
+      <form [formGroup]="editForm">
+        <div class="row g-3 align-items-end">
+          <div class="col-md-6">
+            <label class="form-label">Status</label>
+            <select class="form-select" formControlName="status">
+              <option value="Preparando envio">Preparando envio</option>
+              <option value="Em transporte">Em transporte</option>
+              <option value="Saiu para entrega">Saiu para entrega</option>
+              <option value="Entregue">Entregue</option>
+            </select>
+          </div>
+          <div class="col-md-6 d-flex gap-2">
+            <button class="btn btn-warning" type="button" (click)="salvarEdicao()">Salvar</button>
+            <button class="btn btn-outline-secondary" type="button" (click)="cancelarEdicao()">Cancelar</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div *ngIf="entregas().length === 0" style="color: #888; text-align: center; margin-top: 60px;">
+    <p>Nenhuma entrega encontrada.</p>
+  </div>
+
+  <div *ngFor="let entrega of entregas()" class="card mb-3">
+    <div class="card-header d-flex justify-content-between align-items-center"
+         style="cursor: pointer;"
+         (click)="toggleDetalhes(entrega.id)">
+
+      <div>
+        <strong>Entrega #{{ entrega.id }}</strong>
+        <span class="ms-2 text-muted" style="font-size: 13px;">{{ entrega.dataEnvio }}</span>
+      </div>
+
+      <div class="d-flex align-items-center gap-3">
+        <span class="badge" [ngClass]="{
+          'bg-secondary': entrega.status === 'Preparando envio',
+          'bg-primary': entrega.status === 'Em transporte',
+          'bg-warning text-dark': entrega.status === 'Saiu para entrega',
+          'bg-success': entrega.status === 'Entregue'
+        }">{{ entrega.status }}</span>
+        <span>{{ entregaAberta === entrega.id ? '▲' : '▼' }}</span>
+      </div>
+
+    </div>
+
+    <div class="card-body" *ngIf="entregaAberta === entrega.id">
+      <p><strong>Cliente:</strong> {{ entrega.cliente }}</p>
+      <p><strong>Endereço:</strong> {{ entrega.endereco }}</p>
+
+      <table class="table table-sm mb-3">
+        <thead>
+          <tr>
+            <th>Produto</th>
+            <th>Quantidade</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of entrega.itens">
+            <td>{{ item.nome }}</td>
+            <td>{{ item.quantidade }}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="d-flex gap-2">
+        <button class="btn btn-outline-warning btn-sm"
+                (click)="iniciarEdicao(entrega.id, entrega.status); $event.stopPropagation()">
+          Editar
+        </button>
+        <button class="btn btn-outline-danger btn-sm"
+                (click)="deletarEntrega(entrega.id); $event.stopPropagation()">
+          Deletar
+        </button>
+      </div>
+    </div>
+
+  </div>
+</section>
